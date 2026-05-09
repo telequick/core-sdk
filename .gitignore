@@ -1,0 +1,18 @@
+# Bazel
+/bazel-*
+bazel-bin/
+bazel-out/
+bazel-testlogs/
+
+# OS / editor
+.DS_Store
+*.swp
+.vscode/
+.idea/
+# Build artefacts
+*.o
+*.so
+*.dylib
+*.dll
+*.a
+build/

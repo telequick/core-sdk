@@ -1,0 +1,67 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+
+# Standalone Pure C++20 parsing library
+cc_library(
+    name = "serde_lite",
+    hdrs = [
+        "serde_lite.h",
+        "api_models.h",
+        "g711_lite.h",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Standard Native FFI Shared Library (.so / .dll)
+cc_binary(
+    name = "telequick_core_ffi.so",
+    srcs = ["ffi_bridge.cc", "apm_ffi.cc", "apm_pipeline.cc", "apm_pipeline.hh"],
+    linkshared = True,
+    linkstatic = True,
+    deps = [
+        ":serde_lite",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_absl//absl/types:bad_optional_access",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_absl//absl/strings",
+        "@webrtc_audio_processing//:webrtc_audio_processing"
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "telequick_core_ffi_lib",
+    srcs = [":telequick_core_ffi.so"],
+    visibility = ["//visibility:public"],
+)
+
+cc_test(
+    name = "serde_test",
+    srcs = ["serde_test.cc"],
+    deps = [":serde_lite"],
+)
+
+load("@emsdk//emscripten_toolchain:wasm_rules.bzl", "wasm_cc_binary")
+
+# WebAssembly Emscripten Bridge (.wasm)
+wasm_cc_binary(
+    name = "telequick_core",
+    cc_target = ":telequick_core_cc",
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "telequick_core_cc",
+    srcs = ["wasm_bridge.cc"],
+    tags = ["manual"],
+    copts = ["-fexceptions"],
+    linkopts = [
+        "-lembind",
+        "-fexceptions",
+        "-s MODULARIZE=1",
+        "-s EXPORT_NAME=TeleQuickModule",
+    ],
+    deps = [
+        ":serde_lite"
+    ],
+    visibility = ["//visibility:public"],
+)
