@@ -396,6 +396,38 @@ ExecuteDialplanResponse deserialize_execute_dialplan_response(const val& bytes_v
     ExecuteDialplanResponse req; req.deserialize(r); return req;
 }
 
+// 2026-05-18 — WT direct-media allocation. Method id matches
+// telequick/api/telequick_types.hh::MethodID::AllocateWt = 1763028449.
+val rpc_allocate_wt_request(const AllocateWtRequest& req) {
+    SerdeWriter w; req.serialize(w);
+    const auto& b = w.buffer();
+    uint32_t total_len = b.size() + 8;
+    uint32_t method_id = 1763028449;
+    std::vector<uint8_t> out_buf(total_len);
+    std::memcpy(out_buf.data(), &total_len, 4);
+    std::memcpy(out_buf.data() + 4, &method_id, 4);
+    std::memcpy(out_buf.data() + 8, b.data(), b.size());
+    val view = val(typed_memory_view(out_buf.size(), out_buf.data()));
+    return val::global("Uint8Array").new_(view);
+}
+AllocateWtRequest deserialize_allocate_wt_request(const val& bytes_val) {
+    std::vector<uint8_t> vec = convertJSArrayToNumberVector<uint8_t>(bytes_val);
+    SerdeReader r(vec.data(), vec.size());
+    AllocateWtRequest req; req.deserialize(r); return req;
+}
+
+val serialize_allocate_wt_response(const AllocateWtResponse& req) {
+    SerdeWriter w; req.serialize(w);
+    const auto& buf = w.buffer();
+    val view = val(typed_memory_view(buf.size(), buf.data()));
+    return val::global("Uint8Array").new_(view);
+}
+AllocateWtResponse deserialize_allocate_wt_response(const val& bytes_val) {
+    std::vector<uint8_t> vec = convertJSArrayToNumberVector<uint8_t>(bytes_val);
+    SerdeReader r(vec.data(), vec.size());
+    AllocateWtResponse req; req.deserialize(r); return req;
+}
+
 EMSCRIPTEN_BINDINGS(telequick_module) {
     enum_<ErrorCode>("ErrorCode")
         .value("SUCCESS", ErrorCode::SUCCESS)
@@ -684,4 +716,27 @@ EMSCRIPTEN_BINDINGS(telequick_module) {
 ;
     function("serialize_execute_dialplan_response", &serialize_execute_dialplan_response);
     function("deserialize_execute_dialplan_response", &deserialize_execute_dialplan_response);
+    class_<AllocateWtRequest>("AllocateWtRequest")
+        .constructor<>()
+        .property("call_sid",  &AllocateWtRequest::call_sid)
+        .property("agent_id",  &AllocateWtRequest::agent_id)
+        .property("tenant_id", &AllocateWtRequest::tenant_id)
+        .property("trunk_id",  &AllocateWtRequest::trunk_id)
+        .property("realm",     &AllocateWtRequest::realm)
+;
+    function("rpc_allocate_wt_request", &rpc_allocate_wt_request);
+    function("deserialize_allocate_wt_request", &deserialize_allocate_wt_request);
+    class_<AllocateWtResponse>("AllocateWtResponse")
+        .constructor<>()
+        .property("host",          &AllocateWtResponse::host)
+        .property("port",          &AllocateWtResponse::port)
+        .property("node_id",       &AllocateWtResponse::node_id)
+        .property("media_token",   &AllocateWtResponse::media_token)
+        .property("status",        &AllocateWtResponse::status)
+        .property("error_message", &AllocateWtResponse::error_message)
+        .property("error_code",    &AllocateWtResponse::error_code)
+        .property("timestamp_ms",  &AllocateWtResponse::timestamp_ms)
+;
+    function("serialize_allocate_wt_response", &serialize_allocate_wt_response);
+    function("deserialize_allocate_wt_response", &deserialize_allocate_wt_response);
 }

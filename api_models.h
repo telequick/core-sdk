@@ -691,4 +691,74 @@ struct ExecuteDialplanResponse {
     }
 };
 
+// 2026-05-18 — WT direct-media allocation (mirror of
+// telequick/api/telequick_types.hh::AllocateWtRequest/Response).
+// SDK calls this AFTER Originate has minted the call_sid; the response
+// carries the runtime host:port + media_token the SDK uses to dial WT
+// directly.
+struct AllocateWtRequest {
+    std::string call_sid;
+    std::string agent_id;
+    std::string tenant_id;
+    std::string trunk_id;
+    std::string realm;
+
+    void serialize(SerdeWriter& w) const {
+        auto _env = w.begin_envelope(0, 0);
+        w.write_string(call_sid);
+        w.write_string(agent_id);
+        w.write_string(tenant_id);
+        w.write_string(trunk_id);
+        w.write_string(realm);
+        w.end_envelope(_env);
+    }
+
+    void deserialize(SerdeReader& r) {
+        auto _env = r.read_envelope_header();
+        call_sid  = r.read_string();
+        agent_id  = r.read_string();
+        tenant_id = r.read_string();
+        trunk_id  = r.read_string();
+        realm     = r.read_string();
+        r.skip_to_envelope_end(_env);
+    }
+};
+
+struct AllocateWtResponse {
+    std::string host;
+    uint16_t    port;
+    std::string node_id;
+    std::string media_token;
+    std::string status;
+    std::string error_message;
+    ErrorCode   error_code;
+    int64_t     timestamp_ms;
+
+    void serialize(SerdeWriter& w) const {
+        auto _env = w.begin_envelope(0, 0);
+        w.write_string(host);
+        w.write_pod<uint16_t>(port);
+        w.write_string(node_id);
+        w.write_string(media_token);
+        w.write_string(status);
+        w.write_string(error_message);
+        w.write_pod<int32_t>(static_cast<int32_t>(error_code));
+        w.write_pod<int64_t>(timestamp_ms);
+        w.end_envelope(_env);
+    }
+
+    void deserialize(SerdeReader& r) {
+        auto _env = r.read_envelope_header();
+        host          = r.read_string();
+        port          = r.read_pod<uint16_t>();
+        node_id       = r.read_string();
+        media_token   = r.read_string();
+        status        = r.read_string();
+        error_message = r.read_string();
+        error_code    = static_cast<ErrorCode>(r.read_pod<int32_t>());
+        timestamp_ms  = r.read_pod<int64_t>();
+        r.skip_to_envelope_end(_env);
+    }
+};
+
 } // namespace telequick::api
